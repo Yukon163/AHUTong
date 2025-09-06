@@ -16,7 +16,11 @@ import androidx.savedstate.savedState
 import com.ahu.ahutong.data.dao.AHUCache
 import com.ahu.ahutong.data.dao.AHUCache.saveRoomSelection
 import com.ahu.ahutong.data.dao.RoomSelectionInfo
+import com.ahu.ahutong.data.dao.ElectricityChargeInfo
 import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class CampusApiResponse(
     val msg: String?,
@@ -735,7 +739,24 @@ class ElectricityDepositViewModel: ViewModel() {
                         _errorMessage.value = null
                         _payState.value = PayState.Succeeded
                         Log.d("ElectricityDepositViewModel", "支付成功!")
-
+                        val chargeAmount = amount.toDoubleOrNull()
+                        if (chargeAmount != null && chargeAmount > 0) {
+                            val existingInfo = AHUCache.getElectricityChargeInfo()
+                            if (existingInfo == null) {
+                                val dateFormat = SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault())
+                                val firstDate = dateFormat.format(Date())
+                                val newInfo = ElectricityChargeInfo(
+                                    totalAmount = chargeAmount,
+                                    firstChargeDate = firstDate
+                                )
+                                AHUCache.saveElectricityChargeInfo(newInfo)
+                            } else {
+                                val updatedInfo = existingInfo.copy(
+                                    totalAmount = existingInfo.totalAmount + chargeAmount
+                                )
+                                AHUCache.saveElectricityChargeInfo(updatedInfo)
+                            }
+                        }
                         val roomSelectionInfo = RoomSelectionInfo(
                             campus = _selectedCampus.value,
                             building = _selectedBuilding.value,
