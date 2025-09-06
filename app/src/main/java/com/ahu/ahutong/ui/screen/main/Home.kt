@@ -16,7 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -24,6 +24,7 @@ import androidx.navigation.NavHostController
 import com.ahu.ahutong.ui.screen.main.home.AtAGlance
 import com.ahu.ahutong.ui.screen.main.home.BathroomOpening
 import com.ahu.ahutong.ui.screen.main.home.CampusCard
+import com.ahu.ahutong.ui.screen.main.home.ElectricityCard
 import com.ahu.ahutong.ui.screen.main.home.TodayCourseList
 import com.ahu.ahutong.ui.state.DiscoveryViewModel
 import com.ahu.ahutong.ui.state.ScheduleViewModel
@@ -84,16 +85,33 @@ fun Home(
             }
         }
         SlideInContent(visible = 1 in discoveryViewModel.visibilities) {
-            Row(
+            Column(
                 modifier = Modifier.padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                CampusCard(
-                    balance = discoveryViewModel.balance,
-                    transitionBalance = discoveryViewModel.transitionBalance
-                )
-                BathroomOpening(discoveryViewModel = discoveryViewModel)
+                Row(
+//                    modifier = Modifier.padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.weight(7f),
+                    ) {
+                        CampusCard(
+                            balance = discoveryViewModel.balance,
+                            transitionBalance = discoveryViewModel.transitionBalance,
+                            navController
+                        )
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(4f)
+                            .fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        BathroomOpening(navController = navController, discoveryViewModel = discoveryViewModel)
+                        ElectricityCard(navController = navController, discoveryViewModel = discoveryViewModel)
+                    }
+                }
             }
         }
     }

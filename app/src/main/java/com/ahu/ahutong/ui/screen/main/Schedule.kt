@@ -1,5 +1,8 @@
 package com.ahu.ahutong.ui.screen.main
 
+import android.R
+import android.preference.PreferenceManager
+import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -31,10 +34,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -43,9 +48,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.ahu.ahutong.data.dao.PreferencesManager
 import com.ahu.ahutong.data.model.Course
 import com.ahu.ahutong.ui.screen.main.schedule.CourseCard
 import com.ahu.ahutong.ui.screen.main.schedule.CourseCardSpec
@@ -64,7 +71,7 @@ import java.util.Locale
 import kotlinx.coroutines.launch
 
 @Composable
-fun Schedule(scheduleViewModel: ScheduleViewModel = viewModel()) {
+fun Schedule(scheduleViewModel: ScheduleViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
     val scheduleConfig by scheduleViewModel.scheduleConfig.observeAsState()
     val currentWeekday = scheduleConfig?.weekDay ?: 1
@@ -80,15 +87,13 @@ fun Schedule(scheduleViewModel: ScheduleViewModel = viewModel()) {
             name to baseColor.copy(h = 360.0 * index / courseNames.size).toSrgb().toColor()
         }.toMap()
     }
+
+    val context = LocalContext.current
+    val preferencesManager = remember { PreferencesManager(context = context) }
+
+    val isShowAllCourse by preferencesManager.isShowAllCourse.collectAsState(initial = false)
     val currentWeekCourses = schedule
-        .filter { currentWeek in it.startWeek..it.endWeek }
-        .filter {
-            if (it.singleDouble == "0") {
-                true
-            } else {
-                currentWeek % 2 == it.startWeek % 2
-            }
-        }
+
     var detailedCourse by rememberSaveable { mutableStateOf<Course?>(null) }
     Column(
         modifier = Modifier
@@ -178,16 +183,16 @@ fun Schedule(scheduleViewModel: ScheduleViewModel = viewModel()) {
         }
         // schedule
         val cellWidth = (
-            LocalConfiguration.current.screenWidthDp.dp -
-                CourseCardSpec.mainColumnWidth -
-                CourseCardSpec.cellSpacing * 9
-            ) / 7
+                LocalConfiguration.current.screenWidthDp.dp -
+                        CourseCardSpec.mainColumnWidth -
+                        CourseCardSpec.cellSpacing * 9
+                ) / 7
         val cellHeight = 48.dp
         Box(
             modifier = with(CourseCardSpec) {
                 Modifier
                     .fillMaxWidth()
-                    .height(mainRowHeight + (cellHeight + cellSpacing) * 11 + 24.dp)
+                    .height(mainRowHeight + (cellHeight + cellSpacing) * 13 + 24.dp)
                     .clip(SmoothRoundedCornerShape(32.dp))
                     .background(99.n1 withNight 20.n1)
                     .padding(top = 8.dp)
@@ -196,8 +201,17 @@ fun Schedule(scheduleViewModel: ScheduleViewModel = viewModel()) {
         ) {
             // TODO: current time indicator
             // weekday tags
-            arrayOf("周一", "周二", "周三", "周四", "周五", "周六", "周日").forEachIndexed { index, weekday ->
-                val isCurrentWeekday = currentWeek == scheduleConfig?.week && index + 1 == currentWeekday
+            arrayOf(
+                "周一",
+                "周二",
+                "周三",
+                "周四",
+                "周五",
+                "周六",
+                "周日"
+            ).forEachIndexed { index, weekday ->
+                val isCurrentWeekday =
+                    currentWeek == scheduleConfig?.week && index + 1 == currentWeekday
                 Column(
                     modifier = with(CourseCardSpec) {
                         Modifier
@@ -218,7 +232,10 @@ fun Schedule(scheduleViewModel: ScheduleViewModel = viewModel()) {
                     )
                     Text(
                         text = Calendar.getInstance().apply {
-                            time = scheduleConfig!!.startTime
+                            time = scheduleConfig?.startTime ?: SimpleDateFormat(
+                                "MM-dd",
+                                Locale.CHINA
+                            ).parse("09-01")
                             add(Calendar.DATE, ((currentWeek - 1) * 7) + index)
                         }.let {
                             SimpleDateFormat("MM-dd", Locale.CHINA).format(it.time)
@@ -255,15 +272,29 @@ fun Schedule(scheduleViewModel: ScheduleViewModel = viewModel()) {
             }
             // courses
             currentWeekCourses.forEach { course ->
-                key(course.hashCode()) {
-                    CourseCard(
-                        course = course,
-                        color = courseColors.getOrElse(course.name) { 50.a1 },
-                        cellWidth = cellWidth,
-                        cellHeight = cellHeight,
-                        onClick = { detailedCourse = it }
-                    )
+
+                val isCurrentWeek = currentWeek in course.weekIndexes
+
+                if ((currentWeek >= 1
+                    && currentWeek <= course.weekIndexes.last() && isShowAllCourse)
+
+                    || isCurrentWeek
+
+                ) {
+                    key(course.hashCode()) {
+
+                        CourseCard(
+                            course = course,
+                            color =  courseColors.getOrElse(course.name) { 50.a1 },
+                            cellWidth = cellWidth,
+                            cellHeight = cellHeight,
+                            isCurrentWeek = isCurrentWeek,
+                            onClick = { detailedCourse = it }
+                        )
+                    }
                 }
+
+
             }
         }
     }

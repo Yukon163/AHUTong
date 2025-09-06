@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Feedback
 import androidx.compose.material.icons.outlined.Login
 import androidx.compose.material.icons.outlined.PeopleOutline
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,12 +44,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import arch.sink.utils.Utils
 import com.ahu.ahutong.Constants
 import com.ahu.ahutong.R
+import com.ahu.ahutong.data.api.AHUCookieJar
 import com.ahu.ahutong.data.dao.AHUCache
 import com.ahu.ahutong.ui.shape.SmoothRoundedCornerShape
 import com.ahu.ahutong.ui.state.AboutViewModel
 import com.ahu.ahutong.ui.state.MainViewModel
+import com.franmontiel.persistentcookiejar.cache.SetCookieCache
+import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.kyant.monet.a1
 import com.kyant.monet.n1
@@ -120,9 +126,31 @@ fun Settings(
                 .padding(24.dp, 16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            var count by remember { mutableStateOf(0) }
+            var lastClickTime by remember { mutableStateOf(0L) }
+            val clickTimes: Int = 8
+            val interval: Long = 1000
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable(
+//                    indication = null,
+//                    interactionSource = remember { MutableInteractionSource() }
+                ){
+                    val now = System.currentTimeMillis()
+                    if (now - lastClickTime > interval) {
+                        count = 1
+                    } else {
+                        count++
+                    }
+                    lastClickTime = now
+
+                    if (count >= clickTimes) {
+                        count = 0
+                        navController.navigate("debug")
+                    }
+                }
             ) {
                 Image(
                     painter = painterResource(id = R.mipmap.ic_launcher_foreground),
@@ -141,7 +169,7 @@ fun Settings(
                         style = MaterialTheme.typography.headlineMedium
                     )
                     Text(
-                        text = aboutViewModel.versionName,
+                        text = aboutViewModel.versionName!!,
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
@@ -172,10 +200,16 @@ fun Settings(
                         text = user.name,
                         style = MaterialTheme.typography.headlineSmall
                     )
-                    Text(
-                        text = "${AHUCache.getSchoolYear()} 学年 第${AHUCache.getSchoolTerm()}学期",
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                    AHUCache.getSchoolTerm()?.let {
+                        val data = it.split('-')  //2025-2026-1
+                        if (data.size == 3) {
+                            Text(
+                                text = "第${data.get(0)}-${data.get(1)}学年 第${data.get(2)}学期",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    }
+
                 }
                 Row(
                     modifier = Modifier
@@ -183,29 +217,29 @@ fun Settings(
                         .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(CircleShape)
-                            .background(100.n1 withNight 30.n1)
-                            .clickable { navController.navigate("info") }
-                            .padding(12.dp, 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(
-                            8.dp,
-                            Alignment.CenterHorizontally
-                        ),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Edit,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "修改信息",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
+//                    Row(
+//                        modifier = Modifier
+//                            .weight(1f)
+//                            .clip(CircleShape)
+//                            .background(100.n1 withNight 30.n1)
+//                            .clickable { navController.navigate("info") }
+//                            .padding(12.dp, 8.dp),
+//                        horizontalArrangement = Arrangement.spacedBy(
+//                            8.dp,
+//                            Alignment.CenterHorizontally
+//                        ),
+//                        verticalAlignment = Alignment.CenterVertically
+//                    ) {
+//                        Icon(
+//                            imageVector = Icons.Outlined.Edit,
+//                            contentDescription = null,
+//                            modifier = Modifier.size(20.dp)
+//                        )
+//                        Text(
+//                            text = "修改信息",
+//                            style = MaterialTheme.typography.titleMedium
+//                        )
+//                    }
                     Row(
                         modifier = Modifier
                             .weight(1f)
@@ -232,6 +266,21 @@ fun Settings(
                 }
             }
         }
+
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .clip(SmoothRoundedCornerShape(32.dp)),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            SettingItem(
+                label = stringResource(id = R.string.preferences),
+                icon = Icons.Outlined.Tune,
+                onClick = { navController.navigate("preferences") }
+            )
+
+        }
+
         Text(
             text = "关于",
             modifier = Modifier.padding(horizontal = 24.dp),
@@ -316,6 +365,18 @@ fun Settings(
                         .clickable {
                             mainViewModel.logout()
                             AHUCache.clearAll()
+
+                            val cookieJar = AHUCookieJar(
+                                SetCookieCache(),
+                                SharedPrefsCookiePersistor(Utils.getApp())
+                            )
+
+                            cookieJar.clear()
+                            cookieJar.clearSession()
+
+
+
+
                             Toast
                                 .makeText(context, "已清除所有数据", Toast.LENGTH_SHORT)
                                 .show()

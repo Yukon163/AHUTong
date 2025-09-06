@@ -3,6 +3,7 @@ package com.ahu.ahutong.data.reptile
 import com.ahu.ahutong.data.AHUResponse
 import com.ahu.ahutong.data.base.BaseDataSource
 import com.ahu.ahutong.data.model.BathRoom
+import com.ahu.ahutong.data.model.BathroomTelInfo
 import com.ahu.ahutong.data.model.Card
 import com.ahu.ahutong.data.model.Course
 import com.ahu.ahutong.data.model.Grade
@@ -29,6 +30,10 @@ class ReptileDataSource(user: ReptileUser) : BaseDataSource {
         return checkLoginStatus() ?: WebViewReptile.getSchedule(schoolYear, schoolTerm)
     }
 
+    override suspend fun getSchedule(): AHUResponse<List<Course>> {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun getGrade(): AHUResponse<Grade> {
         return checkLoginStatus() ?: WebViewReptile.getGrade()
     }
@@ -40,6 +45,14 @@ class ReptileDataSource(user: ReptileUser) : BaseDataSource {
     override suspend fun getBathRooms(): AHUResponse<List<BathRoom>> {
         TODO("Not yet implemented")
     }
+
+    override suspend fun getBathroomTelInfo(
+        bathroom: String,
+        tel: String
+    ): AHUResponse<BathroomTelInfo> {
+        TODO("Not yet implemented")
+    }
+
 
     private fun <T> checkLoginStatus(): AHUResponse<T>? {
         if (!ReptileManager.getInstance().isLoginStatus) {

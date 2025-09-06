@@ -61,12 +61,18 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ahu.ahutong.AHUApplication
 import com.ahu.ahutong.R
+import com.ahu.ahutong.data.AHURepository
+import com.ahu.ahutong.data.crawler.manager.CookieManager
+import com.ahu.ahutong.data.crawler.manager.TokenManager
+import com.ahu.ahutong.data.dao.AHUCache
 import com.ahu.ahutong.ui.state.LoginState
 import com.ahu.ahutong.ui.state.LoginViewModel
 import com.kyant.monet.n1
 import com.kyant.monet.withNight
 import kotlinx.coroutines.delay
+
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -88,6 +94,7 @@ fun Login(
             loginViewModel.state = LoginState.Idle
         } else if (loginViewModel.state == LoginState.Succeeded) {
             delay(500)
+            loginViewModel.state = LoginState.Idle
             onLoggedIn()
         }
     }
@@ -286,10 +293,18 @@ private fun logIn(
         loginViewModel.state = LoginState.Failed
         loginViewModel.failureMessage = "请将信息填写完整"
     } else {
-        loginViewModel.loginWithServer(
-            userID = userID,
-            wisdomPassword = password
-        )
+//        loginViewModel.loginWithServer(
+//            userID = userID,
+//            wisdomPassword = password
+//        )
+        AHUApplication.sessionExpired = true
+        AHUCache.clearAll()
+        CookieManager.cookieJar.clear()
+        TokenManager.clear()
+
+
+        loginViewModel.loginWithCrawler(userID = userID,password = password)
+
     }
 }
 

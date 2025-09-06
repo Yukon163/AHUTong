@@ -6,6 +6,14 @@ import com.ahu.ahutong.ext.fromJson
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.tencent.mmkv.MMKV
+import com.ahu.ahutong.ui.state.CampusDataItem
+
+data class RoomSelectionInfo(
+    val campus: CampusDataItem?,
+    val building: CampusDataItem?,
+    val floor: CampusDataItem?,
+    val room: CampusDataItem?
+)
 
 /**
  * @Author SinkDev
@@ -212,6 +220,15 @@ object AHUCache {
     }
 
     /**
+     * 保存房间选择信息
+     * @param info RoomSelectionInfo
+     */
+    fun saveRoomSelection(info: RoomSelectionInfo) {
+        val data = Gson().toJson(info)
+        kv.encode("room_selection_info", data)
+    }
+
+    /**
      * 获取List<Banner>
      * @return List<Banner>?
      */
@@ -235,4 +252,38 @@ object AHUCache {
         clearCurrentUser()
         saveWisdomPassword("")
     }
+
+
+    fun savePhone(phone:String){
+        kv.putString("phone",phone)
+    }
+
+    fun getPhone() : String?{
+        return kv.getString("phone",null)
+    }
+
+
+    fun setJwxtStudentId(id: String){
+        kv.putString("jwxt_stu_id",id)
+    }
+
+    fun getJwxtStudentId() : String?{
+        return kv.getString("jwxt_stu_id",null)
+    }
+
+    /**
+     * 获取房间选择信息
+     * @return RoomSelectionInfo?
+     */
+    fun getRoomSelection(): RoomSelectionInfo? {
+        val data = kv.decodeString("room_selection_info") ?: ""
+        return data.fromJson(RoomSelectionInfo::class.java)
+    }
+
+    fun saveString(key: String ,value : String){
+        kv.putString("key",value)
+    }
+
+
+
 }

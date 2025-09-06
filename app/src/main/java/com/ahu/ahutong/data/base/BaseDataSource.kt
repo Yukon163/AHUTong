@@ -2,6 +2,7 @@ package com.ahu.ahutong.data.base
 
 import com.ahu.ahutong.data.AHUResponse
 import com.ahu.ahutong.data.model.BathRoom
+import com.ahu.ahutong.data.model.BathroomTelInfo
 import com.ahu.ahutong.data.model.Card
 import com.ahu.ahutong.data.model.Course
 import com.ahu.ahutong.data.model.Grade
@@ -21,9 +22,20 @@ interface BaseDataSource {
      */
     suspend fun getSchedule(schoolYear: String, schoolTerm: String): AHUResponse<List<Course>>
 
+    /**
+     * getSchedule (auto get schedule of this semester)
+     */
+    suspend fun getSchedule() : AHUResponse<List<Course>>
+
     suspend fun getGrade(): AHUResponse<Grade>
 
     suspend fun getCardMoney(): AHUResponse<Card>
 
     suspend fun getBathRooms(): AHUResponse<List<BathRoom>>
+
+
+    /**
+     * get account info by tel and bathroom
+     */
+    suspend fun getBathroomTelInfo(bathroom:String,tel: String): AHUResponse<BathroomTelInfo>
 }
