@@ -15,6 +15,11 @@ data class RoomSelectionInfo(
     val room: CampusDataItem?
 )
 
+data class ElectricityChargeInfo(
+    val totalAmount: Double,
+    val firstChargeDate: String
+)
+
 /**
  * @Author SinkDev
  * @Date 2021/7/27-16:49
@@ -280,10 +285,35 @@ object AHUCache {
         return data.fromJson(RoomSelectionInfo::class.java)
     }
 
+    /**
+     * 保存电费累计充值信息
+     * @param info ElectricityChargeInfo
+     */
+    fun saveElectricityChargeInfo(info: ElectricityChargeInfo) {
+        val data = Gson().toJson(info)
+        kv.encode("electricity_charge_acl", data)
+    }
+
+    /**
+     * 获取电费累计充值信息
+     * @return ElectricityChargeInfo?
+     */
+    fun getElectricityChargeInfo(): ElectricityChargeInfo? {
+        val data = kv.decodeString("electricity_charge_acl") ?: ""
+        if (data.isEmpty()) {
+            return null
+        }
+        return data.fromJson(ElectricityChargeInfo::class.java)
+    }
+
+    /**
+     * 清除电费累计充值信息
+     */
+    fun clearElectricityChargeInfo() {
+        kv.removeValueForKey("electricity_charge_acl")
+    }
+
     fun saveString(key: String ,value : String){
         kv.putString("key",value)
     }
-
-
-
 }

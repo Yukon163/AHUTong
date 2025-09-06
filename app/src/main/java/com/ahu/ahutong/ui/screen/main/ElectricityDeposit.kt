@@ -1,9 +1,13 @@
 package com.ahu.ahutong.ui.screen.main
 
+import androidx.compose.foundation.combinedClickable
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -63,9 +67,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.sp
+import com.ahu.ahutong.data.dao.AHUCache
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ElectricityDeposit(
     viewModel : ElectricityDepositViewModel = viewModel()
@@ -99,6 +104,11 @@ fun ElectricityDeposit(
     var buildingsDropdownExpanded by remember { mutableStateOf(false) }
     var floorsDropdownExpanded by remember { mutableStateOf(false) }
     var roomsDropdownExpanded by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    var infoClickCount by remember { mutableStateOf(0) }
+    var currentToast by remember { mutableStateOf<Toast?>(null) }
+    var showResetDialog by remember { mutableStateOf(false) }
 
     var amount by remember { mutableStateOf("") }
 
@@ -295,14 +305,44 @@ fun ElectricityDeposit(
             Row(
                 modifier = Modifier
                     .padding(16.dp)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    // 4. 将 clickable 替换为 combinedClickable
+                    .combinedClickable(
+                        onClick = {
+                            // --- 这里是之前的单击逻辑，保持不变 ---
+                            infoClickCount++
+                            currentToast?.cancel()
+                            val message = when {
+                                infoClickCount == 1 -> "点击五次查看累计充值记录，长按清空记录"
+                                infoClickCount == 2 -> "再点击三次即可查看累计充值记录"
+                                infoClickCount == 3 -> "再点击两次即可查看累计充值记录"
+                                infoClickCount == 4 -> "再点击一次即可查看累计充值记录"
+                                infoClickCount >= 5 -> {
+                                    val chargeInfo = AHUCache.getElectricityChargeInfo()
+                                    if (chargeInfo != null) {
+                                        "从${chargeInfo.firstChargeDate}起累计电费充值金额为：${"%.2f".format(chargeInfo.totalAmount)}元"
+                                    } else {
+                                        "暂无充值记录"
+                                    }
+                                }
+                                else -> null
+                            }
+                            if (message != null) {
+                                val toastLength = if (infoClickCount >= 5) Toast.LENGTH_LONG else Toast.LENGTH_SHORT
+                                val newToast = Toast.makeText(context, message, toastLength)
+                                newToast.show()
+                                currentToast = newToast
+                            }
+                        },
+                        onLongClick = {
+                            showResetDialog = true
+                        }
+                    ),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(text = "信息", style = MaterialTheme.typography.titleMedium)
-
                 Text(text = roomInfo ?: "")
             }
-
         }
 
         Column(
@@ -515,6 +555,31 @@ fun ElectricityDeposit(
                         errorMsg = null
                     }) {
                         Text("取消", color = 10.n1 withNight 90.n1)
+                    }
+                }
+            )
+        }
+        if (showResetDialog) {
+            AlertDialog(
+                onDismissRequest = { showResetDialog = false },
+                title = { Text("确认操作") },
+                text = { Text("您确定要将累计充值金额清零吗？此操作不可撤销。") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            AHUCache.clearElectricityChargeInfo()
+                            Toast.makeText(context, "累计记录已清零", Toast.LENGTH_SHORT).show()
+                            showResetDialog = false
+                        }
+                    ) {
+                        Text("确认")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showResetDialog = false }
+                    ) {
+                        Text("取消")
                     }
                 }
             )
