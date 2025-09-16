@@ -47,6 +47,15 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("my_custom_debug_sign") {
+            storeFile = file("D:\\android\\keySignYukon\\openahu.jks")
+            storePassword = "OpenAHU"
+            keyAlias = "ahutong"
+            keyPassword = "OpenAHU"
+        }
+    }
+
     buildTypes {
         release {
             isShrinkResources = true  // 移除无用的resource文件
@@ -59,16 +68,16 @@ android {
             ndk {
                 abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
             }
-//            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("my_custom_debug_sign")
         }
         debug {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-//            signingConfig = signingConfigs.getByName("my_custom_debug_sign")
+            signingConfig = signingConfigs.getByName("my_custom_debug_sign")
         }
     }
 //    packagingOptions {

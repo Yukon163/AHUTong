@@ -22,6 +22,6 @@
 
 <div>
     <img src="pic/home_page_2025.png" alt="新主页" width="32%">
-    <img src="pic/settings.png" alt="偏好设置" width="32%">
+    <img src="pic/bathroom_charge.png" alt="浴室缴费" width="32%">
     <img src="pic/electricity_charge.png" alt="电控缴费" width="32%">
 </div>
